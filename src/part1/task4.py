@@ -1,47 +1,53 @@
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
-from sklearn.linear_model import LinearRegression
 
 # ============================================================
 #  Load data
 # ============================================================
 df = pd.read_csv("./data/task4/robot_speed_task4.csv", header=None)
-df.columns = ["distance_cm", "time_s"]
+df.columns = ["distance_cm", "dt_s"]
 
-# Extract columns
-x = df["distance_cm"].values.reshape(-1,1)   # distance (cm)
-t = df["time_s"].values.reshape(-1,1)        # time (s)
-
-# ============================================================
-#  Linear regression: x = v * t + b
-# ============================================================
-model = LinearRegression().fit(t, x)
-speed = model.coef_[0][0]      # slope = speed (cm/s)
-bias  = model.intercept_[0]    # intercept (not important)
-
-print("=====================================")
-print(f"Estimated robot speed: {speed:.3f} cm/s")
-print(f"Regression intercept (ignored): {bias:.3f} cm")
-print("=====================================")
+print("\nLoaded data:")
+print(df)
 
 # ============================================================
-#  Plot distance vs time
+#  Each segment is 40 cm (fixed step)
 # ============================================================
-plt.figure(figsize=(10,6))
-plt.scatter(t, x, color='blue', label='Measured data')
+dx = 40.0  # cm
 
-# Regression line
-t_fit = np.linspace(t.min(), t.max(), 100).reshape(-1,1)
-x_fit = model.predict(t_fit)
+# Compute segment speeds
+df["speed_cm_s"] = dx / df["dt_s"]
 
-plt.plot(t_fit, x_fit, color='red', label='Linear fit')
+# Mean speed
+speed_mean = df["speed_cm_s"].mean()
 
-# Labels
-plt.title("Robot Motion Calibration – Distance vs Time")
-plt.xlabel("Time (s)")
-plt.ylabel("Distance (cm)")
+print("\nSegment-wise speeds (cm/s):")
+print(df[["distance_cm", "dt_s", "speed_cm_s"]])
+
+print(f"\nEstimated AVERAGE robot speed: {speed_mean:.3f} cm/s")
+
+
+# ============================================================
+#  Plot Δt values
+# ============================================================
+plt.figure(figsize=(12,5))
+plt.subplot(1,2,1)
+plt.plot(df["distance_cm"], df["dt_s"], marker='o')
+plt.title("Measured Δt for each 40 cm segment")
+plt.xlabel("Distance marker (cm)")
+plt.ylabel("Δt (s)")
 plt.grid(True)
-plt.legend()
 
+# ============================================================
+#  Plot speed for each segment
+# ============================================================
+plt.subplot(1,2,2)
+plt.plot(df["distance_cm"], df["speed_cm_s"], marker='o', color='green')
+plt.title("Estimated robot speed per segment")
+plt.xlabel("Distance marker (cm)")
+plt.ylabel("Speed (cm/s)")
+plt.grid(True)
+
+plt.tight_layout()
 plt.show()
