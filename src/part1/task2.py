@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 #  Load IMU calibration data (Task 2)
 # ============================================================
 
-df = pd.read_csv(r"C:\Users\andre\Desktop\giacomo\universita\eit\2 anno\sensor-fusion\Autonomous-Robot-tracking\data\task2\imu_calibration_task2.csv")
+df = pd.read_csv(r"./data/task2/imu_calibration_task2.csv")
 
 
 # Extract accelerometer axes (in g units)

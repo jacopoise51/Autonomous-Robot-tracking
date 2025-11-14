@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 #Settings
 
 # Path to IMU log file (Task 1)
-FILENAME = "C:\\Users\\jacop\\Desktop\\EIT\\aalto\\sensor fusion\\project\\Autonomous-Robot-tracking\\data\\task1\\imu_reading_task1.csv"  # change path if needed
+FILENAME = "./data/task1/imu_reading_task1.csv"  # change path if needed
 
 
 # 1. Load data and name columns
