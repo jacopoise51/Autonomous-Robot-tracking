@@ -12,7 +12,7 @@ FILENAME = "./dataset5/task1/imu_reading_task1.csv"  # change path if needed
 
 # The file has NO header row, so we set header=None and assign column names manually.
 col_names = [
-    "timestamp",     # [ms] according to description (or seconds with decimals)
+    "timestamp",     # [ms] according to description 
     "acc_x", "acc_y", "acc_z",      # linear acceleration [g]
     "roll", "pitch",                # [deg] from accelerometer
     "gyro_x", "gyro_y", "gyro_z",   # gyroscope [deg/s]
@@ -91,7 +91,7 @@ plt.suptitle("Task 1a – Gyroscope readings (static IMU)")
 plt.tight_layout()
 plt.show()
 
-# Magnetometer (x, y, z) – optional but useful to inspect 
+# Magnetometer (x, y, z)
 plt.figure(figsize=(10, 6))
 plt.subplot(3, 1, 1)
 plt.plot(t, df["mag_x"])

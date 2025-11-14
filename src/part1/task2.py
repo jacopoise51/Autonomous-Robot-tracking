@@ -26,7 +26,7 @@ def extract_up_down(signal, threshold=0.8):
     Returns:
         au : mean acceleration during UP (+1g) period
         ad : mean acceleration during DOWN (-1g) period
-    """
+    """ 
 
     # UP region: values significantly above 0 (approx. +1g)
     up_mask = signal > threshold
@@ -52,12 +52,10 @@ az_u, az_d = extract_up_down(az)
 g = 1  
 
 def compute_gain_bias(au, ad):
-    """
-    Computes gain (k) and bias (b) using the calibration formulas:
+  
+    #Computes gain (k) and bias (b) using the calibration formulas:
 
-        k = (a_u - a_d) / (2g)
-        b = (a_u + a_d) / 2
-    """
+
     k = (au - ad) / (2 * g)
     b = (au + ad) / 2
     return k, b
