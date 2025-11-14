@@ -33,7 +33,7 @@ print(f"\nEstimated AVERAGE robot speed: {speed_mean:.3f} cm/s")
 # ============================================================
 plt.figure(figsize=(12,5))
 plt.subplot(1,2,1)
-plt.plot(df["distance_cm"], df["dt_s"], marker='o')
+plt.scatter(df["distance_cm"], df["dt_s"], marker='o')
 plt.title("Measured Δt for each 40 cm segment")
 plt.xlabel("Distance marker (cm)")
 plt.ylabel("Δt (s)")
@@ -43,7 +43,7 @@ plt.grid(True)
 #  Plot speed for each segment
 # ============================================================
 plt.subplot(1,2,2)
-plt.plot(df["distance_cm"], df["speed_cm_s"], marker='o', color='green')
+plt.scatter(df["distance_cm"], df["speed_cm_s"], marker='o', color='green')
 plt.title("Estimated robot speed per segment")
 plt.xlabel("Distance marker (cm)")
 plt.ylabel("Speed (cm/s)")
