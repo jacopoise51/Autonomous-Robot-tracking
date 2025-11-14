@@ -2,10 +2,9 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 
-#Settings
 
-# Path to IMU log file (Task 1)
-FILENAME = "./data/task1/imu_reading_task1.csv"  # change path if needed
+# Path to IMU log file
+FILENAME = "./dataset5/task1/imu_reading_task1.csv"  # change path if needed
 
 
 # 1. Load data and name columns
@@ -25,13 +24,13 @@ df = pd.read_csv(FILENAME, header=None, names=col_names)
 # Build a relative time axis starting from t = 0
 # If timestamp is in milliseconds, divide by 1000 to get seconds.
 t_raw = df["timestamp"].values
-t = (t_raw - t_raw[0]) * 1e-3   # [s] if input was ms. If it was already in seconds, just remove *1e-3.
+t = (t_raw - t_raw[0]) * 1e-3   # [s] 
 
 
 # 2. Task 1a: Visualize the data
 
 
-# ---- Accelerometer (x, y, z) ----
+#Accelerometer (x, y, z) 
 plt.figure(figsize=(10, 6))
 plt.subplot(3, 1, 1)
 plt.plot(t, df["acc_x"])
@@ -53,7 +52,7 @@ plt.suptitle("Task 1a – Accelerometer readings (static IMU)")
 plt.tight_layout()
 plt.show()
 
-# ---- Roll & Pitch ----
+# Roll & Pitch 
 plt.figure(figsize=(10, 4))
 plt.subplot(2, 1, 1)
 plt.plot(t, df["roll"])
@@ -70,7 +69,7 @@ plt.suptitle("Task 1a – Roll and pitch from accelerometer")
 plt.tight_layout()
 plt.show()
 
-# ---- Gyroscope (x, y, z) ----
+#Gyroscope (x, y, z) 
 plt.figure(figsize=(10, 6))
 plt.subplot(3, 1, 1)
 plt.plot(t, df["gyro_x"])
@@ -92,7 +91,7 @@ plt.suptitle("Task 1a – Gyroscope readings (static IMU)")
 plt.tight_layout()
 plt.show()
 
-# ---- Magnetometer (x, y, z) – optional but useful to inspect ----
+# Magnetometer (x, y, z) – optional but useful to inspect 
 plt.figure(figsize=(10, 6))
 plt.subplot(3, 1, 1)
 plt.plot(t, df["mag_x"])
@@ -117,7 +116,6 @@ plt.show()
 
 # 3. Task 1b: Bias and variance of gyroscope
 
-
 gyro_cols = ["gyro_x", "gyro_y", "gyro_z"]
 
 # Bias = mean value over static interval
@@ -126,15 +124,15 @@ gyro_bias = df[gyro_cols].mean()
 # Variance = sample variance over static interval
 gyro_var = df[gyro_cols].var(ddof=1)  # ddof=1 → unbiased estimator
 
-print("=== Task 1b: Gyroscope bias (mean) [deg/s] ===")
+print("-- Task 1b: Gyroscope bias (mean) [deg/s] --")
 for axis in gyro_cols:
     print(f"{axis}: {gyro_bias[axis]:.6f}")
 
-print("\n=== Task 1b: Gyroscope variance [ (deg/s)^2 ] ===")
+print("\n-- Task 1b: Gyroscope variance [ (deg/s)^2 ] --")
 for axis in gyro_cols:
     print(f"{axis}: {gyro_var[axis]:.6e}")
 
-# If you want the covariance matrix, you can also compute:
+# covariance matrix
 gyro_cov = df[gyro_cols].cov()
-print("\n=== Task 1b: Gyroscope covariance matrix ===")
+print("\n --Task 1b: Gyroscope covariance matrix --")
 print(gyro_cov)
