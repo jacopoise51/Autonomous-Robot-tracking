@@ -8,6 +8,7 @@ import matplotlib.pyplot as plt
 # 1. Settings
 
 # CSV file for Task 3
+#call the dataset folder "datset5"
 csv_file = "./dataset5/task3/camera_module_calibration_task3.csv"   
 
 # From readme.txt:

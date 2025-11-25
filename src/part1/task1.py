@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 
 
 # Path to IMU log file
+#call the dataset folder "datset5"
 FILENAME = "./dataset5/task1/imu_reading_task1.csv"  # change path if needed
 
 
