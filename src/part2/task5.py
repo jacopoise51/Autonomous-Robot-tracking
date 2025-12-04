@@ -6,8 +6,8 @@ import math
 # 1. PARAMETERS (KNOWN FROM CALIBRATION AND GROUND TRUTH)
 # -------------------------------------------------------
 
-# Insert your focal length f obtained from Task 3
-f = 300.0   # <-- CHANGE THIS VALUE
+# focal length f obtained from Task 3
+f = 545.0224088789435
 
 # True physical height of each QR code (in cm)
 h0 = 11.5
