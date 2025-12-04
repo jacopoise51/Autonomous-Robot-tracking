@@ -2,18 +2,17 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 
-# ============================================================
+
 #  Load data
-# ============================================================
+
 df = pd.read_csv("./data/task4/robot_speed_task4.csv", header=None)
 df.columns = ["distance_cm", "dt_s"]
 
 print("\nLoaded data:")
 print(df)
 
-# ============================================================
 #  Each segment is 40 cm (fixed step)
-# ============================================================
+
 dx = 40.0  # cm
 
 # Compute segment speeds
@@ -28,9 +27,7 @@ print(df[["distance_cm", "dt_s", "speed_cm_s"]])
 print(f"\nEstimated AVERAGE robot speed: {speed_mean:.3f} cm/s")
 
 
-# ============================================================
-#  Plot Δt values
-# ============================================================
+#  Plot dt values
 plt.figure(figsize=(12,5))
 plt.subplot(1,2,1)
 plt.scatter(df["distance_cm"], df["dt_s"], marker='o')
@@ -39,9 +36,9 @@ plt.xlabel("Distance marker (cm)")
 plt.ylabel("Δt (s)")
 plt.grid(True)
 
-# ============================================================
+
 #  Plot speed for each segment
-# ============================================================
+
 plt.subplot(1,2,2)
 plt.scatter(df["distance_cm"], df["speed_cm_s"], marker='o', color='green')
 plt.title("Estimated robot speed per segment")

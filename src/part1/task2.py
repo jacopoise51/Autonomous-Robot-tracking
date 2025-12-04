@@ -2,9 +2,9 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 
-# ============================================================
+
 #  Load IMU calibration data (Task 2)
-# ============================================================
+
 
 df = pd.read_csv(r"./data/task2/imu_calibration_task2.csv")
 
@@ -14,9 +14,9 @@ ax = df.iloc[:,1]
 ay = df.iloc[:,2]
 az = df.iloc[:,3]
 
-# ============================================================
+
 #  Function to extract UP and DOWN values for a given axis
-# ============================================================
+
 def extract_up_down(signal, threshold=0.8):
     """
     Detects the UP (+1g) and DOWN (-1g) sections of the accelerometer signal.
@@ -42,17 +42,16 @@ def extract_up_down(signal, threshold=0.8):
 
     return au, ad
 
-# ============================================================
+
 #  Extract UP and DOWN means for each axis
-# ============================================================
+
 
 ax_u, ax_d = extract_up_down(ax)
 ay_u, ay_d = extract_up_down(ay)
 az_u, az_d = extract_up_down(az)
 
-# ============================================================
 #  Compute gain and bias for each axis
-# ============================================================
+
 
 g = 1  
 
@@ -72,9 +71,9 @@ kx, bx = compute_gain_bias(ax_u, ax_d)
 ky, by = compute_gain_bias(ay_u, ay_d)
 kz, bz = compute_gain_bias(az_u, az_d)
 
-# ============================================================
+
 #  Print results
-# ============================================================
+
 
 print("========================================================")
 print(" RAW UP/DOWN MEANS (g units) ")
@@ -90,9 +89,9 @@ print(f"X-axis: gain = {kx:.6f}, bias = {bx:.6f}")
 print(f"Y-axis: gain = {ky:.6f}, bias = {by:.6f}")
 print(f"Z-axis: gain = {kz:.6f}, bias = {bz:.6f}")
 
-# ============================================================
+
 # Plot accelerometer data
-# ============================================================
+
 
 plt.figure(figsize=(12,6))
 plt.plot(ax, label='ax')
