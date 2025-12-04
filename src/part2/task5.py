@@ -41,7 +41,7 @@ QR_GLOBAL = {
 # 3. LOAD camera_localization_task5.csv
 # -------------------------------------------------------
 
-df = pd.read_csv("camera_localization_task5.csv", header=None)
+df = pd.read_csv("./dataset_part2/task5/camera_localization_task5.csv", header=None)
 df.columns = ["timestamp", "qr_id", "Cx", "Cy", "width", "height", "raw_dist", "raw_angle"]
 
 # Keep only the QR codes that are relevant for this experiment
