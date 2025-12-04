@@ -1,6 +1,7 @@
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
+import os
 
 
 # Task 3a: Camera module calibration
@@ -9,7 +10,7 @@ import matplotlib.pyplot as plt
 
 # CSV file for Task 3
 #call the dataset folder "datset5"
-csv_file = "./dataset5/task3/camera_module_calibration_task3.csv"   
+csv_file = "./dataset_part2/task3/camera_module_calibration_task3.csv"   
 
 # From readme.txt:
 dist_camera_pinhole_to_IR = 1.7   # [cm]
@@ -85,3 +86,16 @@ f_pixels = k / h0_cm
 print("\n-- Task 3b: Focal length estimation ")
 print(f"QR-code true height h0 = {h0_cm:.2f} cm")
 print(f"Focal length f ≈ {f_pixels:.3f} pixels")
+
+
+
+#WRITE RESULTS TO FILE IF CHANGED
+
+filename = "./src/part1/camera_results.csv"
+
+with open(filename, "w") as f:
+    f.write("slope,bias,focal_pixels,focal_cm\n")
+    f.write(f"{k},{b},{f_pixels},{k}\n")
+
+print("CSV file updated.")
+
