@@ -254,12 +254,11 @@ for it in range(max_iter):
     # LM acceptance criterion: accept update only if cost decreases
     if J_new < J_old:
         x = x_new
-        lambda_ /= nu   # decrease damping → move closer to Gauss–Newton
-        print(f"Iter {it}: accepted, J = {J_new:.4f}, lambda → {lambda_}")
+        lambda_ /= nu   # decrease damping -> move closer to Gauss–Newton
+        print(f"Iter {it}: accepted, J = {J_new:.4f}, lambda -> {lambda_}")
     else:
-        lambda_ *= nu   # increase damping → move closer to gradient descent
-        print(f"Iter {it}: rejected, J = {J_new:.4f}, lambda → {lambda_}")
-
+        lambda_ *= nu   # increase damping -> move closer to gradient descent
+        print(f"Iter {it}: rejected, J = {J_new:.4f}, lambda -> {lambda_}")
     # Convergence condition: parameter update becomes very small
     if np.linalg.norm(dx) < 1e-6:
         print("Converged (small parameter update).")

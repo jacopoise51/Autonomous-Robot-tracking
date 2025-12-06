@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 
 # Path to IMU log file
 #call the dataset folder "datset5"
-FILENAME = "./dataset5/task1/imu_reading_task1.csv"  # change path if needed
+FILENAME = "./dataset_part2/task1/imu_reading_task1.csv"  # change path if needed
 
 
 # 1. Load data and name columns
@@ -137,3 +137,11 @@ for axis in gyro_cols:
 gyro_cov = df[gyro_cols].cov()
 print("\n --Task 1b: Gyroscope covariance matrix --")
 print(gyro_cov)
+
+filename = "./src/part1/gyro_calibration.csv"
+
+with open(filename, "w") as f:
+    f.write("gyro_bias_x,gyro_bias_y,gyro_bias_z,gyro_variance_x,gyro_variance_y,gyro_variance_z\n")
+    f.write(f"{gyro_bias['gyro_x']},{gyro_bias['gyro_y']},{gyro_bias['gyro_z']},{gyro_var['gyro_x']},{gyro_var['gyro_y']},{gyro_var['gyro_z']}\n")
+
+print("CSV file updated.")

@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 
 #  Load data
 #call the dataset folder "datset5"
-df = pd.read_csv("./dataset5/task4/robot_speed_task4.csv", header=None)
+df = pd.read_csv("./dataset_part2/task4/robot_speed_task4.csv", header=None)
 df.columns = ["distance_cm", "dt_s"]
 
 print("\nLoaded data:")
@@ -44,3 +44,11 @@ plt.grid(True)
 
 plt.tight_layout()
 plt.show()
+
+filename = "./src/part1/motor_calibration.csv"
+
+with open(filename, "w") as f:
+    f.write("average_speed_cm_per_s\n")
+    f.write(f"{speed_mean}\n")
+
+print("CSV file updated.")
