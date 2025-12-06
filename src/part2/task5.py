@@ -87,3 +87,188 @@ print("Variance of distance measurements (σ_d^2):", sigma_d2)
 print("Variance of angle measurements (σ_phi^2):", sigma_phi2)
 print("\nMeasurement noise covariance matrix R:")
 print(R)
+
+
+
+measurements = []   # list of (d_cam, phi_cam)
+qr_positions = []   # list of (sx, sy)
+
+for _, row in df.iterrows():
+    qr = int(row["qr_id"])
+    Cx = float(row["Cx"])
+    h = float(row["height"])
+
+    d_cam = (h0 * f) / h
+    phi_cam = math.atan(Cx / f)
+
+    measurements.append([d_cam, phi_cam])
+    qr_positions.append(QR_GLOBAL[qr])
+
+measurements = np.array(measurements)
+qr_positions = np.array(qr_positions)
+
+
+
+def g(x):
+    """Compute expected distances and angles given robot state x = [px, py, psi]."""
+    px, py, psi = x
+    preds = []
+
+    for (sx, sy) in qr_positions:
+        dx = sx - px
+        dy = sy - py
+
+        d_est = math.sqrt(dx*dx + dy*dy)
+        phi_est = wrap_angle(math.atan2(dy, dx) - psi)
+
+        preds.append([d_est, phi_est])
+
+    return np.array(preds)
+
+
+
+def jacobian(x):
+    """  
+    Compute the Jacobian matrix J(x) of g(x) with respect to x = [px, py, psi] for each QR detection.
+    The output is a matrix of shape (2*M, 3), where M is the number of QR detections.
+    """
+    px, py, psi = x
+    J = []
+
+    for (sx, sy) in qr_positions:
+        dx = sx - px
+        dy = sy - py
+        d = math.sqrt(dx*dx + dy*dy)
+
+        # ∂d/∂px, ∂d/∂py
+        dd_dpx = -dx / d
+        dd_dpy = -dy / d
+        dd_dpsi = 0
+
+        # ∂phi/∂px, ∂phi/∂py, ∂phi/∂psi
+        denom = dx*dx + dy*dy
+        dphi_dpx = dy / denom
+        dphi_dpy = -dx / denom
+        dphi_dpsi = -1
+
+        J.append([dd_dpx, dd_dpy, dd_dpsi])
+        J.append([dphi_dpx, dphi_dpy, dphi_dpsi])
+
+    return np.array(J)
+
+
+
+def residuals_unweighted(x):
+    """
+    Compute the unweighted residual vector r(x).
+    For each QR measurement we stack:
+        [e_d, e_phi]
+    where:
+        e_d   = distance_error  = d_measured - d_predicted
+        e_phi = angle_error     = phi_measured - phi_predicted (wrapped in [-pi, pi])
+    The output is a vector of length 2*M (M = number of QR detections).
+    """
+    px, py, psi = x
+    pred = g(x)
+    res_list = []
+
+    for i in range(len(pred)):
+        e_d = measurements[i, 0] - pred[i, 0]
+        e_phi = wrap_angle(measurements[i, 1] - pred[i, 1])
+        res_list.append(e_d)
+        res_list.append(e_phi)
+
+    return np.array(res_list)
+
+
+def cost_JWLS(x):
+    """
+    Compute the weighted least-squares cost:
+        J(x) = Σ ( e_i^T R^{-1} e_i )
+    where e_i is the (distance, angle) residual pair for each QR detection.
+    Since R is the same for every measurement, R^{-1} is constant.
+    This evaluates the true WLS cost, not the squared unweighted residuals.
+    """
+    res = residuals_unweighted(x)
+    R_inv = np.linalg.inv(R)
+    J = 0.0
+
+    for i in range(0, len(res), 2):
+        e_vec = np.array([res[i], res[i+1]])
+        J += e_vec.T @ R_inv @ e_vec
+
+    return J
+
+
+#Levenberg–Marquardt Algorithm 
+
+# Initial guess for the robot state [px, py, psi]
+x = np.array([50.0, 40.0, np.deg2rad(85.0)])
+print("\nInitial robot state guess:")
+print("px =", x[0])
+print("py =", x[1])
+print("psi (deg) =", np.rad2deg(x[2]))
+
+lambda_ = 1e-3     # initial damping factor
+nu = 10            # factor for adapting lambda
+max_iter = 50      # maximum number of LM iterations
+
+R_inv = np.linalg.inv(R)
+
+for it in range(max_iter):
+
+    # Compute residuals and Jacobian at current estimate
+    res = residuals_unweighted(x)   
+    G = jacobian(x)                 
+
+    # Build normal-equation components:
+    #   H = G^T R^{-1} G
+    #   gk = G^T R^{-1} e
+    H = np.zeros((3, 3))
+    gk = np.zeros(3)
+
+    for i in range(0, len(res), 2):
+        # Residual pair for this QR detection: [e_d, e_phi]
+        e_vec = np.array([res[i], res[i+1]])
+
+        # Corresponding 2 rows of the Jacobian (first distance, then angle)
+        G_i = G[i:i+2, :]   # shape: 2 x 3
+
+        # Accumulate weighted contributions
+        H += G_i.T @ R_inv @ G_i
+        gk += G_i.T @ R_inv @ e_vec
+
+    # LM modification: (H + λ I) Δx = gk
+    H_lm = H + lambda_ * np.eye(3)
+
+    # Solve for the parameter update Δx (more stable than direct inversion)
+    dx = np.linalg.solve(H_lm, gk)
+
+    # New candidate estimate
+    x_new = x + dx
+
+    # Evaluate cost before and after the update
+    J_old = cost_JWLS(x)
+    J_new = cost_JWLS(x_new)
+
+    # LM acceptance criterion: accept update only if cost decreases
+    if J_new < J_old:
+        x = x_new
+        lambda_ /= nu   # decrease damping → move closer to Gauss–Newton
+        print(f"Iter {it}: accepted, J = {J_new:.4f}, lambda → {lambda_}")
+    else:
+        lambda_ *= nu   # increase damping → move closer to gradient descent
+        print(f"Iter {it}: rejected, J = {J_new:.4f}, lambda → {lambda_}")
+
+    # Convergence condition: parameter update becomes very small
+    if np.linalg.norm(dx) < 1e-6:
+        print("Converged (small parameter update).")
+        break
+
+# Final estimated robot state
+px_est, py_est, psi_est = x
+print("\nEstimated robot state:")
+print("px =", px_est)
+print("py =", py_est)
+print("psi (deg, unwrapped)  =", np.rad2deg(psi_est))
+print("psi (deg, wrapped -180..180) =", (np.rad2deg(psi_est) + 180) % 360 - 180)
