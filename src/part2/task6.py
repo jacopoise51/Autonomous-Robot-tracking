@@ -3,14 +3,11 @@ import pandas as pd
 import matplotlib.pyplot as plt
 
 
-# ---------------------------------------------------------
-# 1. PARAMETERS (from calibration)
-# ---------------------------------------------------------
 
-# PWM → velocity gain (from Task 4: avg speed = 5.44 cm/s at PWM = 0.30)
-k_v = 5.44 / 0.30      # ≈ 18.13 cm/s per PWM unit
+# velocity gain (from Task 4: avg speed = 5.44 cm/s at PWM = 0.30)
+k_v = 5.44 / 0.30     
 
-# Gyroscope bias (deg/s) — only z-axis used for yaw
+# Gyroscope bias 
 gyro_bias_z = 0.15198819
 
 # Initial robot pose 
@@ -19,9 +16,7 @@ py0 = 18.5     # cm
 phi0 = 0.0     # rad
 
 
-# ---------------------------------------------------------
-# 2. LOAD IMU + PWM WITH SHARED TIME AXIS
-# ---------------------------------------------------------
+# IMU and PWM data loading
 
 # IMU
 df_imu = pd.read_csv(
@@ -46,7 +41,7 @@ df_pwm = pd.read_csv(
 imu_ts = df_imu["timestamp"].values
 pwm_ts = df_pwm["timestamp"].values
 
-# ---- FIX: use a single global origin ----
+# Shared time origin
 t0 = min(imu_ts[0], pwm_ts[0])
 
 t_imu = imu_ts - t0
@@ -74,9 +69,7 @@ v = k_v * pwm_avg     # cm/s
 
 
 
-# ---------------------------------------------------------
-# 5. NONLINEAR MOTION MODEL
-# ---------------------------------------------------------
+# linearized  state update function
 
 def f(x, v, omega, dt):
     """
@@ -95,9 +88,7 @@ def f(x, v, omega, dt):
 
 
 
-# ---------------------------------------------------------
-# 6. DEAD-RECKONING INTEGRATION
-# ---------------------------------------------------------
+#dead reckoning
 
 N = len(t_imu)
 x_est = np.zeros((N, 3))
@@ -111,9 +102,6 @@ for k in range(1, N):
 
 
 
-# ---------------------------------------------------------
-# 7. PLOT TRAJECTORY
-# ---------------------------------------------------------
 
 plt.figure(figsize=(7,7))
 plt.plot(x_est[:,0], x_est[:,1], label="Dead reckoning (IMU + PWM ZOH)")

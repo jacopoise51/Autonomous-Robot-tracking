@@ -5,27 +5,26 @@ import math
 
 
 
-# PWM → velocity gain (from Task 4: avg speed = 5.44 cm/s at PWM = 0.30)
-k_v = 5.44 / 0.30      # ≈ 18.13 cm/s per PWM unit
+#velocity gain 
+k_v = 5.44 / 0.30     
 
-# Gyroscope bias (deg/s) — only z-axis used for yaw
+# Gyroscope bias 
 gyro_bias_z = 0.15198819
 
-# Initial robot pose in global coordinates (from task description)
+# Initial robot pose
 px0 = 41.7     # cm
 py0 = 18.5     # cm
 phi0 = 0.0     # rad
 
 x0 = np.array([px0, py0, phi0])
 
-# True physical height of QR code (in cm)
+# True physical height of QR code 
 h0 = 11.5
 
-# Focal length f (from Task 3 calibration)  >>> REPLACE with your value <<<
+# Focal length f (from Task 3 calibration)
 f = 545.0224088789435
 
-# Global positions of QR codes (example: same as you used in Task 5)
-# >>> REPLACE or extend with your full qr_code_position_in_global_coordinate.csv <<<
+# Global positions of QR codes 
 QR_GLOBAL = {
     19: (0, 11),
     20: (0, 22.5),
@@ -69,19 +68,15 @@ QR_GLOBAL = {
 }
 
 
-# Measurement noise covariance R (from Task 5 variance estimation)  >>> REPLACE with your R <<<
+# Measurement noise covariance R (from Task 5 variance estimation) 
 sigma_d2   = 18.05          # variance of distance [cm^2]
 sigma_phi2 = 1.99e-4        # variance of angle [rad^2]
 R = np.diag([sigma_d2, sigma_phi2])
 
-# Process noise tuning (very important for EKF behaviour)
-q_pos  = 0.5            # [cm] position noise per step (tunable)
-q_phi  = np.deg2rad(1)  # [rad] heading noise per step (tunable)
+# Process noise      
+q_w  = 0.034361388405623215  
 
 
-# ---------------------------------------------------------
-# 2. UTILITY FUNCTIONS
-# ---------------------------------------------------------
 
 def wrap_angle(a):
     """Wrap angle to [-pi, pi]."""
@@ -155,10 +150,115 @@ def measurement_jacobian_H(x, sx, sy):
     ])
     return H
 
+def process_noise_Q(dt, gyro_variance_z):
+    """
+    Euler–Maruyama process noise for nonlinear stochastic dynamics.
+    Q_k = dt * B Σ_w B^T  
+    
+    gyro_variance_z : variance of gyro noise 
+    """
+    return dt * np.diag([0, 0, gyro_variance_z])
 
-# ---------------------------------------------------------
-# 3. LOAD IMU, PWM, CAMERA WITH SHARED TIME AXIS
-# ---------------------------------------------------------
+def dead_reckoning(t_imu, v, gyro_z, x0):
+    """
+    Dead-reckoning integration of IMU + PWM.
+    Returns array of robot states over time.
+    """
+    N = len(t_imu)
+    x_dr = np.zeros((N, 3))
+    x_dr[0] = x0
+
+    for k in range(1, N):
+        dt = t_imu[k] - t_imu[k-1]
+        x_dr[k] = motion_model(x_dr[k-1], v[k], gyro_z[k], dt)
+
+    return x_dr
+
+def ekf_predict(x, P, v, omega, dt, gyro_variance_z):
+    """
+    EKF prediction step using Euler–Maruyama process noise.
+    """
+    x_pred = motion_model(x, v, omega, dt)
+    F = motion_jacobian_F(x, v, omega, dt)
+    Q = process_noise_Q(dt, gyro_variance_z)
+    P_pred = F @ P @ F.T + Q
+    return x_pred, P_pred
+
+def ekf_update(x, P, qr_id, Cx, h, QR_GLOBAL, f, h0, R):
+    """
+    EKF update for a single camera measurement.
+    Uses QR global position and camera geometry.
+    """
+    if qr_id not in QR_GLOBAL:
+        return x, P
+
+    sx, sy = QR_GLOBAL[qr_id]
+
+    # Camera-derived measurement
+    d_meas = (h0 * f) / h
+    phi_meas = math.atan(Cx / f)
+    z = np.array([d_meas, phi_meas])
+
+    # Predicted measurement
+    z_pred = measurement_model_single_qr(x, sx, sy)
+
+    # Innovation
+    y = z - z_pred
+    y[1] = wrap_angle(y[1])
+
+    # Jacobian
+    H = measurement_jacobian_H(x, sx, sy)
+
+    # EKF update
+    S = H @ P @ H.T + R
+    K = P @ H.T @ np.linalg.inv(S)
+
+    x_upd = x + K @ y
+    x_upd[2] = wrap_angle(x_upd[2])
+
+    P_upd = (np.eye(3) - K @ H) @ P
+
+    return x_upd, P_upd
+
+def run_ekf(t_imu, v, gyro_z, df_cam, QR_GLOBAL, x0, P0, f, h0, R, gyro_variance_z):
+    """
+    Run EKF over entire IMU + camera dataset.
+    Returns filtered trajectory and covariances.
+    """
+    N = len(t_imu)
+    x_ekf = np.zeros((N, 3))
+    P_ekf = np.zeros((N, 3, 3))
+
+    x_ekf[0] = x0
+    P_ekf[0] = P0
+
+    cam_idx = 0
+    N_cam = len(df_cam)
+
+    for k in range(1, N):
+        dt = t_imu[k] - t_imu[k-1]
+
+        # Prediction
+        x_pred, P_pred = ekf_predict(
+            x_ekf[k-1], P_ekf[k-1], v[k], gyro_z[k], dt, gyro_variance_z
+        )
+
+        # Process all camera measurements up to this IMU time
+        while cam_idx < N_cam and df_cam.iloc[cam_idx]["t"] <= t_imu[k]:
+            row = df_cam.iloc[cam_idx]
+            cam_idx += 1
+
+            x_pred, P_pred = ekf_update(
+                x_pred, P_pred,
+                int(row["qr_id"]), float(row["Cx"]), float(row["height"]),
+                QR_GLOBAL, f, h0, R
+            )
+
+        x_ekf[k] = x_pred
+        P_ekf[k] = P_pred
+
+    return x_ekf, P_ekf
+
 
 # IMU
 df_imu = pd.read_csv(
@@ -201,7 +301,7 @@ t_imu = imu_ts - t0
 t_pwm = pwm_ts - t0
 t_cam = cam_ts - t0
 
-# Correct gyro_z (bias + to rad/s)
+# Correct gyro_z 
 gyro_z = (df_imu["gyro_z"].values - gyro_bias_z) * np.pi / 180.0
 
 # Reindex PWM onto IMU timeline with zero-order hold, fill NaN with 0
@@ -218,103 +318,27 @@ v = k_v * pwm_avg   # [cm/s]
 # Camera times
 df_cam["t"] = t_cam
 
+x_dr = dead_reckoning(t_imu, v, gyro_z, x0)
 
-# ---------------------------------------------------------
-# 4. DEAD-RECKONING (baseline without camera)
-# ---------------------------------------------------------
-
-N_imu = len(t_imu)
-x_dr = np.zeros((N_imu, 3))
-x_dr[0] = x0
-
-for k in range(1, N_imu):
-    dt = t_imu[k] - t_imu[k-1]
-    x_dr[k] = motion_model(x_dr[k-1], v[k], gyro_z[k], dt)
+x_ekf, P_ekf = run_ekf(
+    t_imu, v, gyro_z, df_cam, QR_GLOBAL,
+    x0,
+    np.diag([1.0, 1.0, np.deg2rad(5)**2]),
+    f, h0, R, q_w
+)
 
 
-# ---------------------------------------------------------
-# 5. EKF TRACKING (IMU + CAMERA)
-# ---------------------------------------------------------
 
-x_ekf = np.zeros((N_imu, 3))
-P_ekf = np.zeros((N_imu, 3, 3))
-
-x_ekf[0] = x0
-P_ekf[0] = np.diag([1.0, 1.0, np.deg2rad(5)**2])  # initial covariance (tunable)
-
-# Camera index to process measurements in chronological order
-cam_idx = 0
-N_cam = len(df_cam)
-
-for k in range(1, N_imu):
-    dt = t_imu[k] - t_imu[k-1]
-
-    # ----- Prediction step -----
-    x_pred = motion_model(x_ekf[k-1], v[k], gyro_z[k], dt)
-    F = motion_jacobian_F(x_ekf[k-1], v[k], gyro_z[k], dt)
-
-    # Process noise for this step (scaled by dt)
-    Q_k = np.diag([(q_pos*dt)**2, (q_pos*dt)**2, (q_phi*dt)**2])
-
-    P_pred = F @ P_ekf[k-1] @ F.T + Q_k
-
-    # ----- Update step(s) using all camera measurements with t_cam <= t_imu[k] -----
-    while cam_idx < N_cam and df_cam.iloc[cam_idx]["t"] <= t_imu[k]:
-        row = df_cam.iloc[cam_idx]
-        cam_idx += 1
-
-        qr_id = int(row["qr_id"])
-        if qr_id not in QR_GLOBAL:
-            continue  # skip QR codes without known global position
-
-        Cx = float(row["Cx"])
-        h  = float(row["height"])
-
-        # Camera-derived measurements
-        d_meas   = (h0 * f) / h
-        phi_meas = math.atan(Cx / f)
-
-        z = np.array([d_meas, phi_meas])
-
-        # Predicted measurement for this QR
-        sx, sy = QR_GLOBAL[qr_id]
-        z_pred = measurement_model_single_qr(x_pred, sx, sy)
-
-        # Innovation
-        y = z - z_pred
-        y[1] = wrap_angle(y[1])  # wrap angle residual
-
-        # Jacobian H
-        H = measurement_jacobian_H(x_pred, sx, sy)
-
-        # EKF update
-        S = H @ P_pred @ H.T + R
-        K = P_pred @ H.T @ np.linalg.inv(S)
-
-        x_pred = x_pred + K @ y
-        x_pred[2] = wrap_angle(x_pred[2])  # keep heading wrapped
-
-        I = np.eye(3)
-        P_pred = (I - K @ H) @ P_pred
-
-    # Store updated state and covariance
-    x_ekf[k] = x_pred
-    P_ekf[k] = P_pred
-
-
-# ---------------------------------------------------------
-# 6. PLOT: DEAD-RECKONING VS EKF
-# ---------------------------------------------------------
-
+# Plotting results
 plt.figure(figsize=(8, 8))
 
-# Ideal walls (121.5 cm square)
+# walls 
 plt.axvline(0,      color='k', linestyle='--', linewidth=1)
 plt.axvline(121.5,  color='k', linestyle='--', linewidth=1)
 plt.axhline(0,      color='k', linestyle='--', linewidth=1)
 plt.axhline(121.5,  color='k', linestyle='--', linewidth=1)
 
-# QR-code positions (optional)
+# QR-code positions
 for qr_id, (sx, sy) in QR_GLOBAL.items():
     plt.plot(sx, sy, 'ko')
     plt.text(sx+1, sy+1, str(qr_id), fontsize=8)
