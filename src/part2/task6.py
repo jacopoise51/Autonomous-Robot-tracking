@@ -117,11 +117,5 @@ plt.axhline(0, color='k', linestyle='--')       # Wall 4
 plt.axhline(121.5, color='k', linestyle='--')   # Wall 2
 plt.show()
 
-print("IMU timestamps:", t_imu[:10])
-print("PWM timestamps:", t_pwm[:10])
 
-print(df_pwm_resampled.head(10))
 
-print("Any NaN in PWM resampled?:", df_pwm_resampled.isna().any().any())
-print("Any NaN in v?:", np.isnan(v).any())
-print("Any NaN in x_est?:", np.isnan(x_est).any())
