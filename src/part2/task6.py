@@ -73,7 +73,7 @@ v = k_v * pwm_avg     # cm/s
 
 def f(x, v, omega, dt):
     """
-    Discrete-time quasi-constant turn model (Euler–Maruyama).
+    Discrete-time quasi-constant turn model (Euler-Maruyama).
     Inputs:
         x     = [px, py, phi]
         v     = measured forward velocity (odometry)

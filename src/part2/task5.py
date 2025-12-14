@@ -54,24 +54,24 @@ for _, row in df.iterrows():
     Cx = float(row["Cx"])
     h = float(row["height"])
 
-    # ----- 5.1 Camera-derived measurements -----
+    #5.1 Camera-derived measurements
     # Distance estimate from QR height in pixels
     d_cam = (h0 * f) / h
 
     # Angle estimate from QR center pixel location
     phi_cam = math.atan(Cx / f)
 
-    # ----- 5.2 True QR code global position -----
+    #5.2 True QR code global position
     sx, sy = QR_GLOBAL[qr]
 
-    # ----- 5.3 Ground-truth distance and angle -----
+    #5.3 Ground-truth distance and angle
     d_true = math.sqrt((sx - px_true)**2 + (sy - py_true)**2)
 
     # global bearing to QR minus robot heading
     phi_true = math.atan2((sy - py_true), (sx - px_true)) - psi_true
     phi_true = wrap_angle(phi_true)
 
-    # ----- 5.4 Measurement errors -----
+    #5.4 Measurement errors
     dist_errors.append(d_cam - d_true)
     angle_errors.append(wrap_angle(phi_cam - phi_true))
 

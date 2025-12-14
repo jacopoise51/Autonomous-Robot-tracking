@@ -152,7 +152,7 @@ def measurement_jacobian_H(x, sx, sy):
 
 def process_noise_Q(dt, gyro_variance_z):
     """
-    Euler–Maruyama process noise for nonlinear stochastic dynamics.
+    Euler-Maruyama process noise for nonlinear stochastic dynamics.
     Q_k = dt * B Σ_w B^T  
     
     gyro_variance_z : variance of gyro noise 
@@ -176,7 +176,7 @@ def dead_reckoning(t_imu, v, gyro_z, x0):
 
 def ekf_predict(x, P, v, omega, dt, gyro_variance_z):
     """
-    EKF prediction step using Euler–Maruyama process noise.
+    EKF prediction step using Euler-Maruyama process noise.
     """
     x_pred = motion_model(x, v, omega, dt)
     F = motion_jacobian_F(x, v, omega, dt)
@@ -351,7 +351,7 @@ plt.plot(x_ekf[:,0], x_ekf[:,1], 'r', label="EKF (IMU + Camera)")
 
 plt.xlabel("px [cm]")
 plt.ylabel("py [cm]")
-plt.title("Task 7 – Tracking with IMU and Camera (EKF)")
+plt.title("Task 7 - Tracking with IMU and Camera (EKF)")
 plt.grid(True)
 plt.axis("equal")
 plt.legend()
